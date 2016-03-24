@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width">
+	<title>fast-pool Source: fast-pool.js</title>
+
+	<!--[if lt IE 9]>
+	<script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+	<link type="text/css" rel="stylesheet" href="styles/sunlight.default.css">
+
+	<link type="text/css" rel="stylesheet" href="styles/site.paper.css">
+
+</head>
+
+<body>
+
+<div class="navbar navbar-default navbar-fixed-top ">
+<div class="container">
+	<div class="navbar-header">
+		<a class="navbar-brand" href="index.html">fast-pool</a>
+		<button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#topNavigation">
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+        </button>
+	</div>
+	<div class="navbar-collapse collapse" id="topNavigation">
+		<ul class="nav navbar-nav">
+			
+			<li class="dropdown">
+				<a href="classes.list.html" class="dropdown-toggle" data-toggle="dropdown">Classes<b class="caret"></b></a>
+				<ul class="dropdown-menu ">
+					<li><a href="Pool.html">Pool</a></li>
+				</ul>
+			</li>
+			
+			<li class="dropdown">
+				<a href="global.html" class="dropdown-toggle" data-toggle="dropdown">Global<b class="caret"></b></a>
+				<ul class="dropdown-menu ">
+					<li><a href="global.html#fastPool">fastPool</a></li>
+				</ul>
+			</li>
+			
+		</ul>
+		<div class="col-sm-3 col-md-3">
+            <form class="navbar-form" role="search">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Search" name="q" id="search-input">
+                    <div class="input-group-btn">
+                        <button class="btn btn-default" id="search-submit"><i class="glyphicon glyphicon-search"></i></button>
+                    </div>
+                </div>
+            </form>
+        </div>
+	</div>
+
+</div>
+</div>
+
+
+<div class="container" id="toc-content">
+<div class="row">
+
+	
+	<div class="col-md-12">
+	
+		<div id="main">
+			
+
+		<h1 class="page-title">Source: fast-pool.js</h1>
+    
+<section>
+    <article>
+        <pre
+            class="sunlight-highlight-javascript linenums">/*global define,module */
+
+/**
+ * @license fastPool - A lightweight and fast object pool implementation
+ *
+ * Version 1.0.0
+ *
+ * Copyright (c) 2016 Jens Arps
+ * http://jensarps.de/
+ *
+ * Licensed under the MIT license
+ */
+
+(function (name, definition, global) {
+
+    'use strict';
+
+    if (typeof define === 'function') {
+        define(definition);
+    } else if (typeof module !== 'undefined' &amp;&amp; module.exports) {
+        module.exports = definition();
+    } else {
+        global[name] = definition();
+    }
+})('fastPool', function () {
+
+    'use strict';
+
+    /**
+     * The Pool constructor. When calling `fastPool()`, an instance of `Pool` will be returned.
+     * 
+     * @exports Pool
+     *
+     * @param options
+     * @param {function} options.createObject A function that returns a new object
+     * @param {number} options.preAllocate The number of objects to pre-allocate
+     * @param {function} [options.resetObject] A function that will turn a used, dirty object into a clean state
+     * @constructor
+     */
+    var Pool = function (options) {
+        this.createObject = options.createObject;
+        this.resetObject = options.resetObject;
+        this.preAllocate(options.preAllocate);
+    };
+
+    Pool.prototype = /** @lends {Pool} */ {
+
+        constructor: Pool,
+
+        /**
+         * A function that returns a new object.
+         *
+         * @type {function}
+         */
+        createObject: null,
+
+        /**
+         * A function that will turn a used, dirty object into a clean state.
+         *
+         * @type {function}
+         */
+        resetObject: null,
+
+        /**
+         * The actual object pool.
+         *
+         * @private
+         */
+        _pool: [],
+
+        /**
+         * Pre-allocates the pool to the given size.
+         *
+         * @param {number} size The amount of objects to pre-allocate
+         */
+        preAllocate: function (size) {
+            while (size--) {
+                this._pool.push(this.createObject());
+            }
+        },
+
+        /**
+         * Removes an object from the pool and hands it over to the caller. If the pool is empty, will create a new
+         * object.
+         *
+         * @returns {*} An object
+         */
+        transfer: function () {
+            var pool = this._pool;
+            return pool.length ? pool.pop() : this.createObject();
+        },
+
+        /**
+         * Takes back an object and puts it back into the pool. If a `resetObject` function is given, it will be
+         * executed with the given object as first and only argument.
+         *
+         * @param {*} object The object to put back into the pool.
+         */
+        takeBack: function (object) {
+            if (this.resetObject) {
+                this.resetObject(object);
+            }
+            this._pool.push(object);
+        },
+
+        /**
+         * Makes sure that the pool has at least the given size.
+         *
+         * @param {number} size
+         */
+        ensureSize: function (size) {
+            var diff = size - this._pool.length;
+            if (diff > 0) {
+                this.preAllocate(diff);
+            }
+        }
+    };
+
+    /**
+     * The map of pools. Singleton.
+     *
+     * @type {Object&lt;string, Pool>}
+     * @private
+     */
+    var _pools = {};
+
+    /**
+     * Returns an object pool identified with the given name. If no pool with the given name exists, it will create a
+     * new pool.
+     *
+     *
+     * @example
+     *  // create a pool for a given `Vector3` class
+     *  
+     *  var vec3Pool = fastPool({
+     *      name: 'vec3',
+     *      ctor: Vector3,
+     *      preAllocate: 20
+     *  });
+     *  
+     *  // get a Vector3 instance from the pool
+     *  var vec3 = vec3Pool.transfer();
+     *  
+     *  // when it's no longer needed, return it to the pool
+     *  vec3Pool.takeBack(vec3);
+     * 
+     * @example
+     *  // Extending the example above, but making sure the Vector3 instances are in a clean
+     *  // state whenever one is transferred from the pool. The resetObject function is called
+     *  // during `takeBack`, before the object is put back into the pool.
+     *
+     *  var vec3Pool = fastPool({
+     *      name: 'vec3',
+     *      ctor: Vector3,
+     *      preAllocate: 20,
+     *      resetObject: function (vec3) {
+     *          vec3.set(0, 0, 0);
+     *      }
+     *  });
+     *
+     *  // get a Vector3 instance from the pool
+     *  var vec3 = vec3Pool.transfer();
+     *
+     *  // do work, and then back to the pool
+     *  vec3.x = 5;
+     *  vec3Pool.takeBack(vec3); // before the object is put back into the pool, it gets reset.
+     *
+     *
+     * @example
+     *  // Create pool of Float32Arrays with a given size. Passing only the constructor does not
+     *  // work, as it needs an argument, so using the `createObject` property here instead of `ctor`.
+     *
+     *  var matrix16Pool = fastPool({
+     *      name: 'matrix4',
+     *      preAllocate: 100,
+     *      createObject: function () {
+     *          return new Float32Array(16);
+     *      }
+     *  });
+     *
+     * @example
+     *  // Create a pool of complex objects with unknown quantity for runtime, so keep the
+     *  // pre-allocation low.
+     *
+     *  var tieFighterPool = fastPool({
+     *      name: 'TieFighter',
+     *      preAllocate: 5,
+     *      createObject: function () {
+     *          var tieFighter = new Fighter({
+     *              type: 'TieFighter',
+     *              AIStrength: 3
+     *          });
+     *          tieFighter.setTarget(player);
+     *      },
+     *      resetObject: function (tieFighter) {
+     *          tieFighter.clearTarget();
+     *          tieFighter.resetPosition();
+     *      }
+     *  });
+     *
+     *
+     * @version 1.0.0
+     * @type {function}
+     * @alias fastPool
+     *
+     * @param {object} options
+     * @param {string} options.name The name that identifies this pool
+     * @param {function} [options.ctor] A constructor, that, when called with the new keyword, returns a new object
+     * @param {function} [options.createObject] A function that returns a new object
+     * @param {number} [options.preAllocate=0] The number of objects to pre-allocate
+     * @param {function} [options.resetObject] A function that will turn a used, 'dirty' object into a clean state
+     * @returns {Pool} An object pool
+     */
+    function fastPool(options) {
+
+        if (!options || !options.name) {
+            throw new Error('fastPool: No `name` property given.');
+        }
+
+        if (!options.ctor &amp;&amp; !options.createObject) {
+            throw new Error('fastPool: Neither `ctor` nor `createObject` property given.');
+        }
+
+        options.preAllocate = options.preAllocate || 0;
+
+        var pool = _pools[options.name];
+
+        if (typeof pool !== 'undefined') {
+            pool.ensureSize(options.preAllocate);
+            return pool;
+        }
+
+        options.createObject = options.createObject ||
+            function () {
+                return new options.ctor();
+            };
+
+        pool = _pools[options.name] = new Pool(options);
+
+        return pool;
+    }
+
+    return fastPool;
+
+}, this);
+</pre>
+    </article>
+</section>
+
+
+
+
+
+		</div>
+	</div>
+
+	<div class="clearfix"></div>
+
+	
+
+</div>
+</div>
+
+<div class="modal fade" id="searchResults">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title">Search results</h4>
+      </div>
+      <div class="modal-body"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div>
+
+<footer>
+
+
+	<span class="copyright">
+	Copyright © 2016 <a href='http://jensarps.de/' target='_blank'>Jens Arps</a>
+	</span>
+
+<span class="jsdoc-message">
+	Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a>
+	
+		on 2016-03-24T15:58:23+01:00
+	
+	using the <a href="https://github.com/docstrap/docstrap">DocStrap template</a>.
+</span>
+</footer>
+
+<script src="scripts/docstrap.lib.js"></script>
+<script src="scripts/toc.js"></script>
+<script type="text/javascript" src="scripts/fulltext-search-ui.js"></script>
+
+<script>
+$( function () {
+	$( "[id*='$']" ).each( function () {
+		var $this = $( this );
+
+		$this.attr( "id", $this.attr( "id" ).replace( "$", "__" ) );
+	} );
+
+	$( ".tutorial-section pre, .readme-section pre" ).each( function () {
+		var $this = $( this );
+
+		var example = $this.find( "code" );
+		exampleText = example.html();
+		var lang = /{@lang (.*?)}/.exec( exampleText );
+		if ( lang && lang[1] ) {
+			exampleText = exampleText.replace( lang[0], "" );
+			example.html( exampleText );
+			lang = lang[1];
+		} else {
+			var langClassMatch = example.parent()[0].className.match(/lang\-(\S+)/);
+			lang = langClassMatch ? langClassMatch[1] : "javascript";
+		}
+
+		if ( lang ) {
+
+			$this
+			.addClass( "sunlight-highlight-" + lang )
+			.addClass( "linenums" )
+			.html( example.html() );
+
+		}
+	} );
+
+	Sunlight.highlightAll( {
+		lineNumbers : true,
+		showMenu : true,
+		enableDoclinks : true
+	} );
+
+	$.catchAnchorLinks( {
+        navbarOffset: 10
+	} );
+	$( "#toc" ).toc( {
+		anchorName  : function ( i, heading, prefix ) {
+			var id = $( heading ).attr( "id" );
+			return id && id.replace(/\~/g, '-inner-').replace(/\./g, '-static-') || ( prefix + i );
+		},
+		selectors   : "#toc-content h1,#toc-content h2,#toc-content h3,#toc-content h4",
+		showAndHide : false,
+		smoothScrolling: true
+	} );
+
+	$( "#main span[id^='toc']" ).addClass( "toc-shim" );
+	$( '.dropdown-toggle' ).dropdown();
+
+    $( "table" ).each( function () {
+      var $this = $( this );
+      $this.addClass('table');
+    } );
+
+} );
+</script>
+
+
+
+<!--Navigation and Symbol Display-->
+
+
+<!--Google Analytics-->
+
+
+<script type="text/javascript">
+	$(document).ready(function() {
+		SearcherDisplay.init();
+	});
+</script>
+
+</body>
+</html>
