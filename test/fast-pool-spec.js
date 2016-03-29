@@ -1,6 +1,6 @@
 describe('fastPool', function () {
 
-    describe('creation', function () {
+    describe('options argument', function () {
 
         it('should throw if no options are passed', function () {
             var hasThrown = false;
@@ -46,7 +46,8 @@ describe('fastPool', function () {
             try {
                 var options = {
                     name: 'test',
-                    ctor: function () {}
+                    ctor: function () {
+                    }
                 };
                 fastPool(options);
             } catch (e) {
@@ -61,7 +62,8 @@ describe('fastPool', function () {
             try {
                 var options = {
                     name: 'test',
-                    createObject: function () {}
+                    createObject: function () {
+                    }
                 };
                 fastPool(options);
             } catch (e) {
@@ -71,7 +73,7 @@ describe('fastPool', function () {
             expect(hasThrown).to.equal(false);
         });
 
-        it('should return existing pool with given name', function () {
+        it('should return existing pool if pool with given name exists', function () {
 
             var options = {
                 name: 'test_1',
@@ -90,7 +92,6 @@ describe('fastPool', function () {
         });
 
     });
-
 
     describe('createObject', function () {
 
@@ -113,6 +114,52 @@ describe('fastPool', function () {
 
             expect(pool.createObject).to.be.a('function');
         });
+
+        it('should use return value for pool', function () {
+            var Foo = function () {};
+            var options = {
+                name: '__name_3__',
+                createObject: function () {
+                    return new Foo();
+                }
+            };
+            var pool = fastPool(options);
+
+            var result = pool.createObject();
+
+            expect(result).to.be.an.instanceof(Foo);
+        });
+
+        it('should use ctor value for pool', function () {
+            var Bar = function () {};
+            var options = {
+                name: '__name_4__',
+                ctor: Bar
+            };
+            var pool = fastPool(options);
+
+            var result = pool.createObject();
+
+            expect(result).to.be.an.instanceof(Bar);
+        });
+    });
+
+    // integration tests
+
+    describe('preAllocate', function () {
+
+        it('should fill the pool with the given amount of objects', function () {
+            var Bar = function () {};
+            var options = {
+                name: '__name_5__',
+                ctor: Bar,
+                preAllocate: 13
+            };
+            var pool = fastPool(options);
+
+            expect(pool._pool.length).to.equal(13);
+        });
+
     });
 
 });
