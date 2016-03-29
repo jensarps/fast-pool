@@ -2,7 +2,7 @@
   "name": "fast-pool",
   "description": "A lightweight and fast object pool implementation",
   "author": "Jens Arps (http://jensarps.de/)",
-  "version": "1.0.0",
+  "version": "0.9.0",
   "license": "MIT",
   "main": "dist/fast-pool.min.js",
   "repository": "jensarps/fast-pool",
@@ -13,12 +13,15 @@
     "grunt-closurecompiler": "^0.9.9",
     "grunt-contrib-jshint": "^1.0.0",
     "grunt-jsdoc": "^1.1.0",
+    "grunt-karma": "^0.12.2",
     "ink-docstrap": "^1.1.4",
     "karma": "^0.13.22",
     "karma-chai": "^0.1.0",
     "karma-mocha": "^0.2.2",
     "karma-phantomjs-launcher": "^1.0.0",
+    "karma-sinon": "^1.0.4",
     "mocha": "^2.4.5",
-    "phantomjs-prebuilt": "^2.1.6"
+    "phantomjs-prebuilt": "^2.1.6",
+    "sinon": "^1.17.3"
   }
 }

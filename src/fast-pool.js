@@ -3,7 +3,7 @@
 /**
  * @license fastPool - A lightweight and fast object pool implementation
  *
- * Version 1.0.0
+ * Version 0.9.0
  *
  * Copyright (c) 2016 Jens Arps
  * http://jensarps.de/
