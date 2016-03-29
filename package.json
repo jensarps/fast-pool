@@ -18,7 +18,9 @@
     "karma-chai": "^0.1.0",
     "karma-mocha": "^0.2.2",
     "karma-phantomjs-launcher": "^1.0.0",
+    "karma-sinon": "^1.0.4",
     "mocha": "^2.4.5",
-    "phantomjs-prebuilt": "^2.1.6"
+    "phantomjs-prebuilt": "^2.1.6",
+    "sinon": "^1.17.3"
   }
 }
