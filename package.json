@@ -13,6 +13,7 @@
     "grunt-closurecompiler": "^0.9.9",
     "grunt-contrib-jshint": "^1.0.0",
     "grunt-jsdoc": "^1.1.0",
+    "grunt-karma": "^0.12.2",
     "ink-docstrap": "^1.1.4",
     "karma": "^0.13.22",
     "karma-chai": "^0.1.0",
